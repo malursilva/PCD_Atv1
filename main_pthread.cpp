@@ -5,14 +5,20 @@
 #include <vector>
 #define N 50
 #define MAX_TURNS 4
-#define MAX_THREADS 2
+#define MAX_THREADS 1
 using namespace std;
 
-struct gridData{
+struct grid_data {
     vector<vector<float>> grid;
-    vector<vector<float>> newGrid;
+    vector<vector<float>> *newGrid;
+};
+
+struct thread_data {
+    grid_data data;
     int t_index;
 };
+
+struct thread_data thread_data_array[MAX_THREADS];
 
  void printGrid(vector<vector<float>> grid) {
     vector<float> aux;
@@ -128,38 +134,42 @@ float getNewCellState(vector<vector<float>> grid, int i, int j) {
 }
 
 void * calcNewGrid(void *res) {
-    gridData *data;
-    data = (gridData *) res;
-    int start = (*data).t_index * (N/MAX_THREADS);
+    thread_data *tData;
+    grid_data gridData;
+
+    tData = (thread_data *) res;
+    gridData = (*tData).data;
+
+    int index = (*tData).t_index;
+    int start = index * (N/MAX_THREADS);
     int end;
 
-    if((*data).t_index == MAX_THREADS-1) {
+    if(index == MAX_THREADS-1) {
         end = N;
     } else {
         end = start + (N/MAX_THREADS);
     }
-    printf("Thread[%d]: start=%d end=%d\n", (*data).t_index, start, end);
-
+    
     for(int i=start; i<end; i++) {
         for(int j=0; j<N; j++) {
-            (*data).newGrid[i][j] = getNewCellState((*data).grid, i, j);
+            (*gridData.newGrid)[i][j] = getNewCellState(gridData.grid, i, j);
         }
     }
-    //printf("\nThread[%d]\n", (*data).t_index);
-    //printGrid((*data).newGrid);
-    
+    // printf("Thread[%d]: start=%d end=%d\n", index, start, end);
+
     pthread_exit(NULL);
 }
 
-gridData runGeneration(gridData data) {
+grid_data runGeneration(grid_data data) {
     pthread_t threads[MAX_THREADS];
-    struct gridData newData;
+    struct grid_data newData;
     newData = data;
 
     for(int i=0; i<MAX_THREADS; i++) {
-        newData.t_index = i;
-        pthread_create(&threads[i], NULL, calcNewGrid, (void *) &newData);
-        printf("Created Thread[%d]\n", i);
+        thread_data_array[i].data = newData;
+        thread_data_array[i].t_index = i;
+        pthread_create(&threads[i], NULL, calcNewGrid, (void *) &thread_data_array[i]);
+        // printf("Created Thread[%d]\n", i);
     }
 
     for(int i=0; i<MAX_THREADS; i++) {
@@ -167,27 +177,24 @@ gridData runGeneration(gridData data) {
     }
     
     for(int i=0; i<N; i++)
-        newData.grid[i] = newData.newGrid[i];
+        newData.grid[i] = (*newData.newGrid)[i];
 
     return newData;
 }
 
 int main() {
-    gridData data;
-    vector<vector<float>> grid;
+    grid_data data;
+    vector<vector<float>> grid, newgrid;
     initializeGrid(grid);
+    initializeGrid(newgrid);
     
     data.grid = grid;
-    data.newGrid = grid;
-
-//    printf("--------Inicio--------\n");
-//    printGrid(grid);
+    data.newGrid = &newgrid;
 
     for(int i=0; i<MAX_TURNS; i++) {
         data = runGeneration(data);
        // printGrid(data.grid);
     }
 
-    printf("--------Final--------\n");
     printGrid(data.grid);
 }
