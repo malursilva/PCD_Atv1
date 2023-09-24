@@ -1,4 +1,7 @@
-// Maria Luíza Rodrigues da Silva - 120527
+/* 
+* Rainbow Game - Versão PThreads
+* Maria Luíza Rodrigues da Silva - 120527
+*/
 #include <stdio.h>
 #include <iostream>
 #include <pthread.h>

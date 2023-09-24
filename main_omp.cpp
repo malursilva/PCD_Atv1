@@ -1,4 +1,7 @@
-// Maria Luíza Rodrigues da Silva - 120527
+/* 
+* Rainbow Game - Versão OpenMP
+* Maria Luíza Rodrigues da Silva - 120527
+*/
 #include <stdio.h>
 #include <omp.h>
 #include <iostream>
