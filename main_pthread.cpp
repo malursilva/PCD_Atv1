@@ -3,6 +3,8 @@
 #include <iostream>
 #include <pthread.h>
 #include <vector>
+#include <time.h>
+#include <sys/time.h>
 #define N 50
 #define MAX_TURNS 4
 #define MAX_THREADS 1
@@ -169,7 +171,6 @@ grid_data runGeneration(grid_data data) {
         thread_data_array[i].data = newData;
         thread_data_array[i].t_index = i;
         pthread_create(&threads[i], NULL, calcNewGrid, (void *) &thread_data_array[i]);
-        // printf("Created Thread[%d]\n", i);
     }
 
     for(int i=0; i<MAX_THREADS; i++) {
@@ -185,6 +186,10 @@ grid_data runGeneration(grid_data data) {
 int main() {
     grid_data data;
     vector<vector<float>> grid, newgrid;
+    struct timeval inicio, final;
+    int tmili;
+
+    gettimeofday(&inicio, NULL);
     initializeGrid(grid);
     initializeGrid(newgrid);
     
@@ -193,8 +198,10 @@ int main() {
 
     for(int i=0; i<MAX_TURNS; i++) {
         data = runGeneration(data);
-       // printGrid(data.grid);
     }
+    gettimeofday(&final, NULL);
+    tmili = (int) (1000 * (final.tv_sec - inicio.tv_sec) + (final.tv_usec - inicio.tv_usec) / 1000);
 
     printGrid(data.grid);
+    printf("Tempo decorrido: %d milisegundos\n", tmili);
 }

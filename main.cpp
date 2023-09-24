@@ -2,11 +2,11 @@
 #include <stdio.h>
 #include <iostream>
 #include <vector>
+#include <time.h>
+#include <sys/time.h>
 #define N 2048
 #define MAX_TURNS 4
 using namespace std;
-
-// g++ -o teste main_pthread.cpp
 
 void printGrid(vector<vector<float>> grid) {
     vector<float> aux;
@@ -14,7 +14,6 @@ void printGrid(vector<vector<float>> grid) {
 
     for(int i=0; i<N; i++) {
         for(int j=0; j<N; j++) {
-            //cout << aux.at(j) << " ";
             if(grid[i][j] > 0.000) {
                 printf("o ");
                 alive++;
@@ -83,9 +82,6 @@ int getNeighbors(vector<vector<float>> grid, int i, int j, float *mean) {
                     count++;
                 
             }
-            /*if(grid[i][j]>0.0) {
-                printf("Cell[%d][%d]-> Counting on [%d][%d]: %d\n", i, j, lineIndex[k], colIndex[l], count);
-            }*/
         }
     }
     (*mean) = sum / 8; 
@@ -118,8 +114,6 @@ float getNewCellState(vector<vector<float>> grid, int i, int j) {
     float mean;
     int numNeighbors = getNeighbors(grid, i, j, &mean);
     
-    // if(cState > 0.0) printf("Cell[%d][%d] -> Alive Neighbours: %d\n", i, j, numNeighbors);
-
     // Os casos em que a célula fica viva: 1- Se já estiver viva e ter 2 ou 3 vizinhos vivos; 2- Se estiver morta e ter 3 vizinhos vivos
     if(((cState > 0.0) && (numNeighbors == 2 || numNeighbors == 3)) || (cState == 0.0 && numNeighbors == 3)){
         nState = mean;
@@ -134,7 +128,6 @@ void runGeneration(vector<vector<float>> &grid) {
 
     for(int i=0; i<N; i++) {
         for(int j=0; j<N; j++) {
-            //printf("Line 125 - Cell[%d][%d]\n", i, j);
             newgrid[i][j] = getNewCellState(grid, i, j);
         }
     }
@@ -143,20 +136,19 @@ void runGeneration(vector<vector<float>> &grid) {
 }
 
 int main() {
+    struct timeval inicio, final;
     vector<vector<float>> grid;
+    int tmili;
     
+    gettimeofday(&inicio, NULL);
     initializeGrid(grid);
-//    printf("--------Inicio--------\n");
-//    printGrid(grid);
-
-    // Inserir a medição do tempo inicial e final
     
     for(int i=0; i<MAX_TURNS; i++) {
-        //printf("\n--------%d geracao--------\n", i+1);
         runGeneration(grid);
-       // printGrid(grid);
     }
+    gettimeofday(&final, NULL);
+    tmili = (int) (1000 * (final.tv_sec - inicio.tv_sec) + (final.tv_usec - inicio.tv_usec) / 1000);
 
-    printf("--------Final--------\n");
     printGrid(grid);
+    printf("Tempo decorrido: %d milisegundos\n", tmili);
 }
