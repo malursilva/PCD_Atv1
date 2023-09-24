@@ -1,6 +1,6 @@
 **Projeto 1** da UC de Programação Concorrente e Distribuída
 
-    _Rainbow Game of Life_
+    **Rainbow Game of Life**
 
 Universidade Federal de São Paulo - 2023
 
