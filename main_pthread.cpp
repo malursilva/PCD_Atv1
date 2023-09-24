@@ -5,8 +5,9 @@
 #include <vector>
 #include <time.h>
 #include <sys/time.h>
-#define N 50
-#define MAX_TURNS 4
+#define N 2048
+#define PRINT_SIZE 50
+#define MAX_TURNS 5
 #define MAX_THREADS 1
 using namespace std;
 
@@ -26,8 +27,8 @@ struct thread_data thread_data_array[MAX_THREADS];
     vector<float> aux;
     int alive = 0;
 
-    for(int i=0; i<N; i++) {
-        for(int j=0; j<N; j++) {
+    for(int i=0; i<PRINT_SIZE; i++) {
+        for(int j=0; j<PRINT_SIZE; j++) {
             if(grid[i][j] > 0.0000) {
                 printf("o ");
                 alive++;
