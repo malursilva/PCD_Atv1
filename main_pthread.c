@@ -9,7 +9,7 @@
 #include <sys/time.h>
 #define N 2048
 #define PRINT_SIZE 50
-#define MAX_TURNS 5
+#define MAX_TURNS 2000
 #define MAX_THREADS 1
 
 struct grid_data {
@@ -24,14 +24,23 @@ struct thread_data {
 
 struct thread_data thread_data_array[MAX_THREADS];
 
-void printGrid(float **grid) {
+int aliveCells(float **grid) {
     int alive = 0;
+    for(int i=0; i<N; i++) {
+        for(int j=0; j<N; j++) {
+            if(grid[i][j] > 0.00000) {
+                alive++;
+            } 
+        }
+    }
+    return alive;
+}
 
+void printGrid(float **grid) {
     for(int i=0; i<PRINT_SIZE; i++) {
         for(int j=0; j<PRINT_SIZE; j++) {
-            if(grid[i][j] > 0.000) {
+            if(grid[i][j] > 0.00000) {
                 printf("o ");
-                alive++;
             } else {
                 printf("x ");
             }
@@ -39,8 +48,6 @@ void printGrid(float **grid) {
         }
         printf("\n");
     }
-
-    printf("Alive cells: %d\n", alive);
 }
 
 int calcMinIndex(int index) {
@@ -72,7 +79,7 @@ void initializeGrid(float **grid) {
     for(int i=0; i<N; i++) {
         grid[i] = (float *) malloc(N * sizeof(float));
         for(int j=0; j<N; j++) {
-            grid[i][j] = 0.0;
+            grid[i][j] = 0.000;
         }
     }
     drawGlider(grid);
@@ -80,7 +87,7 @@ void initializeGrid(float **grid) {
 }
 
 int getNeighbors(float **grid, int i, int j, float *mean) {
-    float sum = 0.0;
+    float sum = 0.000;
     int li, ci, k, l, count = 0;
     int lineIndex[3] = {calcMinIndex(i), i, (i+1) % N};
     int colIndex[3] = {calcMinIndex(j), j, (j+1) % N};
@@ -90,7 +97,7 @@ int getNeighbors(float **grid, int i, int j, float *mean) {
             if(!(lineIndex[k]==i && colIndex[l]==j)) { 
                 sum += grid[lineIndex[k]][colIndex[l]]; // Aproveita para achar a média dos vizinhos
                 
-                if(grid[lineIndex[k]][colIndex[l]] > 0.0) // Acima de 0.0 já é considerado viva 
+                if(grid[lineIndex[k]][colIndex[l]] > 0.000) // Acima de 0.000 já é considerado viva 
                     count++;
                 
             }
@@ -107,7 +114,7 @@ float getMean(float **grid, int i, int j) {
     int minC = calcMinIndex(j);
     int maxL = (i+1) % N;
     int maxC = (j+1) % N;
-    float sum = 0.0;
+    float sum = 0.000;
 
     for(k=minL; k=maxL; k++) {
         for(l=minC; l=minL; l++) {
@@ -122,12 +129,12 @@ float getMean(float **grid, int i, int j) {
 
 float getNewCellState(float **grid, int i, int j) {
     float cState = grid[i][j];
-    float nState = 0.0;
+    float nState = 0.000;
     float mean;
     int numNeighbors = getNeighbors(grid, i, j, &mean);
     
     // Os casos em que a célula fica viva: 1- Se já estiver viva e ter 2 ou 3 vizinhos vivos; 2- Se estiver morta e ter 3 vizinhos vivos
-    if(((cState > 0.0) && (numNeighbors == 2 || numNeighbors == 3)) || (cState == 0.0 && numNeighbors == 3)){
+    if(((cState > 0.000) && (numNeighbors == 2 || numNeighbors == 3)) || (cState == 0.000 && numNeighbors == 3)){
         nState = mean;
     }
 
@@ -153,7 +160,7 @@ void * calcNewGrid(void *res) {
     
     for(int i=start; i<end; i++) {
         for(int j=0; j<N; j++) {
-            gridData->newGrid[i][j] = getNewCellState((*gridData).grid, i, j);
+            (*gridData).newGrid[i][j] = getNewCellState((*gridData).grid, i, j);
         }
     }
 
@@ -182,8 +189,6 @@ int main() {
     struct timeval inicio, final;
     int tmili;
 
-    gettimeofday(&inicio, NULL);
-    
     grid = (float **) malloc(N * sizeof(float *));      
     newgrid = (float **) malloc(N * sizeof(float *));      
     
@@ -193,14 +198,17 @@ int main() {
     data.grid = grid;
     data.newGrid = newgrid;
 
+    gettimeofday(&inicio, NULL);
     for(int i=0; i<MAX_TURNS; i++) {
+        //printf("%d ", i);
         runGeneration(&data);
-       // printf("------------Generation %d------------\n", i+1);
-       // printGrid(grid);
+    //    printf("------------Generation %d------------\n", i+1);
+    //    printGrid(data.grid);
     }
     gettimeofday(&final, NULL);
     tmili = (int) (1000 * (final.tv_sec - inicio.tv_sec) + (final.tv_usec - inicio.tv_usec) / 1000);
 
     printGrid(data.grid);
-    printf("Tempo decorrido: %d milisegundos\n", tmili);
+    printf("\nAlive cells: %d\n", aliveCells(data.grid));
+    printf("\nTempo decorrido: %d milisegundos\n", tmili);
 }
