@@ -4,8 +4,8 @@ Universidade Federal de São Paulo - 2023
 
 _**Rainbow Game of Life**_
 
-main.cpp          ->    Código Serial
+main.c         ->    Código Serial
 
-main_pthread.cpp  ->    Código utilizando PThreads
+main_pthread.c  ->    Código utilizando PThreads
 
-main_omp.cpp      ->    Código utilizando OpenMP
+main_omp.c      ->    Código utilizando OpenMP
