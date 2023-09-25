@@ -1,19 +1,17 @@
 /* 
-* Rainbow Game - Versão Serial
+* Rainbow Game - Versão OpenMP
 * Maria Luíza Rodrigues da Silva - 120527
 */
 #include <stdio.h>
-#include <iostream>
-#include <vector>
+#include <stdlib.h>
+#include <omp.h>
 #include <time.h>
-#include <sys/time.h>
 #define N 2048
 #define PRINT_SIZE 50
 #define MAX_TURNS 5
-using namespace std;
+#define MAX_THREADS 4
 
-void printGrid(vector<vector<float>> grid) {
-    vector<float> aux;
+void printGrid(float **grid) {
     int alive = 0;
 
     for(int i=0; i<PRINT_SIZE; i++) {
@@ -37,7 +35,7 @@ int calcMinIndex(int index) {
     else return index - 1;
 }
 
-void drawGlider(vector<vector<float>> &grid) {
+void drawGlider(float **grid) {
     int lin = 1, col = 1;
 
     grid[lin  ][col+1] = 1.0;
@@ -47,7 +45,7 @@ void drawGlider(vector<vector<float>> &grid) {
     grid[lin+2][col+2] = 1.0;
 }
 
-void drawRPentomino(vector<vector<float>> &grid) {
+void drawRPentomino(float **grid) {
     int lin = 10, col = 30;
 
     grid[lin  ][col+1] = 1.0;
@@ -57,25 +55,22 @@ void drawRPentomino(vector<vector<float>> &grid) {
     grid[lin+2][col+1] = 1.0;
 }
 
-void initializeGrid(vector<vector<float>> &grid) {
-    vector<float> aux;
-
+void initializeGrid(float **grid) {
     for(int i=0; i<N; i++) {
+        grid[i] = (float *) malloc(N * sizeof(float));
         for(int j=0; j<N; j++) {
-            aux.push_back(0);
+            grid[i][j] = 0.0;
         }
-        grid.push_back(aux);
-        aux.clear();
     }
     drawGlider(grid);
     drawRPentomino(grid);
 }
 
-int getNeighbors(vector<vector<float>> grid, int i, int j, float *mean) {
+int getNeighbors(float **grid, int i, int j, float *mean) {
     float sum = 0.0;
     int li, ci, k, l, count = 0;
-    vector<int> lineIndex = {calcMinIndex(i), i, (i+1) % N};
-    vector<int> colIndex = {calcMinIndex(j), j, (j+1) % N};
+    int lineIndex[3] = {calcMinIndex(i), i, (i+1) % N};
+    int colIndex[3] = {calcMinIndex(j), j, (j+1) % N};
     
     for(k=0; k<3; k++) {
         for(l=0; l<3; l++) {
@@ -93,7 +88,7 @@ int getNeighbors(vector<vector<float>> grid, int i, int j, float *mean) {
     return count;
 }
 
-float getMean(vector<vector<float>> grid, int i, int j) {
+float getMean(float **grid, int i, int j) {
     int k, l;
     int minL = calcMinIndex(i);
     int minC = calcMinIndex(j);
@@ -112,7 +107,7 @@ float getMean(vector<vector<float>> grid, int i, int j) {
     return sum / 8;
 }
 
-float getNewCellState(vector<vector<float>> grid, int i, int j) {
+float getNewCellState(float **grid, int i, int j) {
     float cState = grid[i][j];
     float nState = 0.0;
     float mean;
@@ -126,33 +121,46 @@ float getNewCellState(vector<vector<float>> grid, int i, int j) {
     return nState;
 }
 
-void runGeneration(vector<vector<float>> &grid) {
-    vector<vector<float>> newgrid;
+void runGeneration(float ***grid) {
+    int i, j;
+    float **newgrid;
+
+    newgrid = (float **) malloc(N * sizeof(float *));
     initializeGrid(newgrid);
 
-    for(int i=0; i<N; i++) {
-        for(int j=0; j<N; j++) {
-            newgrid[i][j] = getNewCellState(grid, i, j);
+    omp_set_num_threads(MAX_THREADS);
+    
+    #pragma omp parallel default(none) private(j) shared(i, newgrid, grid) 
+    {
+        #pragma omp for
+        for(i=0; i<N; i++) {
+            for(j=0; j<N; j++) {
+                newgrid[i][j] = getNewCellState((*grid), i, j);
+            }
         }
     }
-    for(int i=0; i<N; i++)
-        grid[i] = newgrid[i];
+    
+    (*grid) = newgrid;
+    free(newgrid);
 }
 
 int main() {
-    struct timeval inicio, final;
-    vector<vector<float>> grid;
-    int tmili;
-    
-    gettimeofday(&inicio, NULL);
+    float **grid;
+    double start, end;
+
+    grid = (float **) malloc(N * sizeof(float *));      
     initializeGrid(grid);
-    
+
+    start = omp_get_wtime();    
     for(int i=0; i<MAX_TURNS; i++) {
-        runGeneration(grid);
+        //printf("%d ", i);
+        runGeneration(&grid);
+       // printf("------------Generation %d------------\n", i+1);
+       // printGrid(grid);
     }
-    gettimeofday(&final, NULL);
-    tmili = (int) (1000 * (final.tv_sec - inicio.tv_sec) + (final.tv_usec - inicio.tv_usec) / 1000);
+    printf("\n");
+    end = omp_get_wtime();
 
     printGrid(grid);
-    printf("Tempo decorrido: %d milisegundos\n", tmili);
+    printf("\nTempo decorrido: %f milissegunds.\n", 1000*(end-start));
 }
